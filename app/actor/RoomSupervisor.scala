@@ -1,8 +1,8 @@
 package actor
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{ActorLogging, Actor, ActorRef, Props}
 
-class RoomSupervisor extends Actor {
+class RoomSupervisor extends Actor with ActorLogging {
   type RoomRef = ActorRef
 
   var rooms: Map[String, RoomRef] = Map()
@@ -10,11 +10,14 @@ class RoomSupervisor extends Actor {
   override def receive: Receive = {
     case GetOrCreateRoom(name) =>
       rooms.get(name) match {
-        case Some(room) => RoomResponse(name, room)
+        case Some(room) =>
+          room ! UserJoin(sender())
         case None =>
           val room = createRoom(name)
           room ! UserJoin(sender())
       }
+    case ListRooms() =>
+      sender ! ListRoomsResponse(rooms.keys.toSeq)
   }
 
   private def createRoom(name: String) = {
